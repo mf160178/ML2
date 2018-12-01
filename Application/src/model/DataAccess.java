@@ -276,7 +276,7 @@ public class DataAccess implements AutoCloseable {
             }
         }
         
-        //return Collections.EMPTY_LIST;
+        return Collections.EMPTY_LIST;
     }
 
     /**
