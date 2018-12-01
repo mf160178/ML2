@@ -64,7 +64,7 @@ public class DataStoreInit {
     System.out.println("\b\b\b: " + dao.initDataStore(seats, PRICE_LIST));
     System.out.println("available seats: " + dao.getAvailableSeats(false));
       System.out.println("prices: " + dao.getPriceList() );
-      dao.bookSeats("aa", asList(4), false);
+      dao.bookSeats("aa", asList(1), false);
 
     // close dao
     dao.close();

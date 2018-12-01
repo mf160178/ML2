@@ -196,6 +196,7 @@ public class DataAccess implements AutoCloseable {
             for (float price : priceList) {
                 sql = "INSERT INTO category (price) VALUES ( " + price + " )";
                 statement.executeUpdate(sql);
+
             }
             System.out.println("category populated");
 
@@ -309,30 +310,38 @@ public class DataAccess implements AutoCloseable {
      */
     public List<Booking> bookSeats(String customer, List<Integer> counts,
             boolean adjoining) throws DataAccessException, SQLException {
-        // TODO
-try (ResultSet results = connection.prepareStatement("SELECT id FROM seat WHERE available=TRUE ORDER BY id;").executeQuery()) {
-    results.last();
-    if (counts.size()<=results.getRow()){
-       //results.beforeFirst(); 
-       results.first();
-       if(adjoining){
-           
-       }
-       else{
-              while (results.next()) {
-                    System.out.println("resu  "+results.getInt(1));
+        List<Booking> listBookings = new ArrayList<>();
+
+        try (ResultSet results = connection.prepareStatement("SELECT id FROM seat WHERE available=TRUE ORDER BY id;").executeQuery()) {
+            results.last();
+            if (counts.size() <= results.getRow()) {
+                int bookableSeat;
+                results.beforeFirst();
+
+                if (adjoining) {
+
+                } else {
+                    results.next();
+                    for (int cat : counts) {
+                        Statement statement = connection.createStatement();
+                        bookableSeat = results.getInt(1);
+                        ResultSet price = connection.prepareStatement("SELECT price FROM category WHERE id=" + (cat + 1) + ";").executeQuery();
+                        price.next();
+                        System.out.println("   " + price.getFloat(1));
+
+                        statement.executeUpdate("INSERT INTO booking (id_seat,customer,id_category,price) "
+                                + "VALUES(" + bookableSeat + ",'" + customer + "'," + cat + "," + price.getFloat(1) + ");");
+                        statement.executeUpdate("UPDATE seat SET available=FALSE WHERE id=" + bookableSeat + ";");
+                        listBookings.add(new Booking(bookableSeat, customer, cat, price.getFloat(1)));
+                        System.out.println(listBookings.get(listBookings.size() - 1).toString());
+
+                    }
                 }
-           for(int cat : counts){
-               System.out.println("iterat  "+cat);
-               results.next();
-               System.out.println("resu  "+results.getInt(1));
-           }
-       }
-    }
+            }
 
             return Collections.EMPTY_LIST;
         }
-       // return Collections.EMPTY_LIST;
+        // return Collections.EMPTY_LIST;
     }
 
     /**
