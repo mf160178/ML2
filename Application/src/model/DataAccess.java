@@ -1,9 +1,12 @@
 package model;
 
+//import com.mysql.jdbc.PreparedStatement;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -207,11 +210,24 @@ public class DataAccess implements AutoCloseable {
      * @return the price list
      *
      * @throws DataAccessException if an unrecoverable error occurs
+     * @throws java.sql.SQLException
      */
-    public List<Float> getPriceList() throws DataAccessException {
+    public List<Float> getPriceList() throws DataAccessException, SQLException {
         // TODO 
         // select price from prices
-        return Collections.EMPTY_LIST;
+        
+        //PreparedStatement priceList;
+        //priceList = connection.prepareStatement("SELECT price FROM category;");
+        
+        try(ResultSet results = connection.prepareStatement("SELECT price FROM category;").executeQuery())
+        {
+            List<Float> list = new ArrayList<>();
+            while(results.next())
+                list.add(results.getFloat(1));
+            
+            return list;
+        }
+        
     }
 
     /**

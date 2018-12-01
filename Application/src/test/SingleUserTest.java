@@ -43,6 +43,7 @@ public class SingleUserTest {
    * @param args the command line arguments: URL, login, password
    *
    * @throws DataAccessException for convenience (no try-catch needed)
+   * @throws java.sql.SQLException
    */
   public static void main(String[] args) throws DataAccessException, SQLException {
 
