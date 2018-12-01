@@ -310,6 +310,7 @@ public class DataAccess implements AutoCloseable {
      */
     public List<Booking> bookSeats(String customer, List<Integer> counts,
             boolean adjoining) throws DataAccessException, SQLException {
+
         List<Booking> listBookings = new ArrayList<>();
 
         try (ResultSet results = connection.prepareStatement("SELECT id FROM seat WHERE available=TRUE ORDER BY id;").executeQuery()) {
@@ -331,6 +332,10 @@ public class DataAccess implements AutoCloseable {
                             break;
                         }
                     }
+                    if (freeSeats.size() < 2 && counts.size() > 1) {
+                        System.err.println("Not enough adjoining seats for this booking");
+                        return Collections.EMPTY_LIST;
+                    }
 
                 }
                 results.next();
@@ -348,6 +353,7 @@ public class DataAccess implements AutoCloseable {
                     System.out.println(listBookings.get(listBookings.size() - 1).toString());
 
                 }
+                return listBookings;
             }
             System.err.println("Not enough seats for this booking");
 
@@ -374,9 +380,46 @@ public class DataAccess implements AutoCloseable {
      * @throws DataAccessException if an unrecoverable error occurs
      */
     public List<Booking> bookSeats(String customer, List<List<Integer>> seatss)
-            throws DataAccessException {
+            throws DataAccessException, SQLException {
         // TODO
-        return Collections.EMPTY_LIST;
+        List<Booking> listBookings = new ArrayList<>();
+
+        int nbWantedSeats = 0;
+        for (List<Integer> category : seatss) {
+            for (int nbSeats : category) {
+                nbWantedSeats++;
+            }
+        }
+
+        try (ResultSet results = connection.prepareStatement("SELECT id FROM seat WHERE available=TRUE ORDER BY id;").executeQuery()) {
+            results.last();
+            ArrayList<Integer> freeSeats = new ArrayList();
+
+            if (nbWantedSeats <= results.getRow()) {
+                int bookableSeat;
+                results.beforeFirst();
+                results.next();
+
+                for (int i = 0; i < seatss.size(); i++) {
+                    ResultSet price = connection.prepareStatement("SELECT price FROM category WHERE id=" + (i + 1) + ";").executeQuery();
+                    price.next();
+                    for (int j = 0; j < seatss.get(i).size(); j++) {
+                        Statement statement = connection.createStatement();
+
+                        statement.executeUpdate("INSERT INTO booking (id_seat,customer,id_category,price) "
+                                + "VALUES(" + seatss.get(i).get(j) + ",'" + customer + "'," + i + "," + price.getFloat(1) + ");");
+                        statement.executeUpdate("UPDATE seat SET available=FALSE WHERE id=" + seatss.get(i).get(j) + ";");
+                        listBookings.add(new Booking(seatss.get(i).get(j), customer, i, price.getFloat(1)));
+                        System.out.println(listBookings.get(listBookings.size() - 1).toString());
+                    }
+                }
+
+                return listBookings;
+            }
+            System.err.println("Not enough seats for this booking");
+
+            return Collections.EMPTY_LIST;
+        }
     }
 
     /**
@@ -391,9 +434,19 @@ public class DataAccess implements AutoCloseable {
      *
      * @throws DataAccessException if an unrecoverable error occurs
      */
-    public List<Booking> getBookings(String customer) throws DataAccessException {
-        // TODO
-        return Collections.EMPTY_LIST;
+    public List<Booking> getBookings(String customer) throws DataAccessException, SQLException {
+        ResultSet results;
+        List<Booking> bookingList = new ArrayList();
+      if(customer.equals("")){
+      results = connection.prepareStatement("SELECT * FROM booking;").executeQuery();    
+      }
+      else{
+      results = connection.prepareStatement("SELECT * FROM booking WHERE customer ='"+customer+"';").executeQuery();    
+      }
+      while (results.next()){
+          bookingList.add(new Booking(results.getInt(1),results.getInt(2),results.getString(3),results.getInt(4),results.getFloat(5)));
+      }
+        return bookingList;
     }
 
     /**
@@ -412,9 +465,29 @@ public class DataAccess implements AutoCloseable {
      *
      * @throws DataAccessException if an unrecoverable error occurs
      */
-    public boolean cancelBookings(List<Booking> bookings) throws DataAccessException {
-        // TODO
-        return false;
+    public boolean cancelBookings(List<Booking> bookings) throws DataAccessException, SQLException {
+        
+        boolean sentinel = true;
+        ResultSet results;
+        
+        for (Booking b : bookings){
+            results = connection.prepareStatement("SELECT * FROM booking WHERE id ='"+b.getId() +"';").executeQuery();   
+            results.next();
+            if(results.getInt(2)!=b.getSeat()||results.getString(3).equals(b.getCustomer())||results.getInt(4)!=b.getCategory()||results.getFloat(5)!=b.getPrice()){
+                sentinel = false;
+                break;
+            }
+        }
+        if (sentinel){
+            
+            Statement statement = connection.createStatement();
+for (Booking b : bookings){
+            statement.executeUpdate("DELETE FROM booking WHERE id = "+b.getId()+");");
+}
+                
+                  
+        }
+        return sentinel;
     }
 
     /**
@@ -428,5 +501,4 @@ public class DataAccess implements AutoCloseable {
     public void close() throws DataAccessException {
         // TODO
     }
-
 }
