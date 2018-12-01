@@ -228,6 +228,8 @@ public class DataAccess implements AutoCloseable {
             return list;
         }
         
+        //return Collections.EMPTY_LIST;
+        
     }
 
     /**
@@ -252,12 +254,23 @@ public class DataAccess implements AutoCloseable {
      * seat is available
      *
      * @throws DataAccessException if an unrecoverable error occurs
+     * @throws java.sql.SQLException
      */
     public List<Integer> getAvailableSeats(boolean stable) throws
-            DataAccessException {
+            DataAccessException, SQLException {
         // TODO
         //select seat from seats where available=true
-        return Collections.EMPTY_LIST;
+        
+        try(ResultSet results = connection.prepareStatement("SELECT id FROM seat WHERE free=TRUE;").executeQuery())
+        {
+            List<Integer> list = new ArrayList<>();
+            while(results.next())
+                list.add(results.getInt(1));
+            
+            return list;
+        }
+        
+        //return Collections.EMPTY_LIST;
     }
 
     /**
