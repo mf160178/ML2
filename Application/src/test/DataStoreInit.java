@@ -63,6 +63,8 @@ public class DataStoreInit {
     System.out.print("creating a database with " + seats + " seats...");
     System.out.println("\b\b\b: " + dao.initDataStore(seats, PRICE_LIST));
     System.out.println("available seats: " + dao.getAvailableSeats(false));
+      System.out.println("prices: " + dao.getPriceList() );
+      dao.bookSeats("aa", asList(4), false);
 
     // close dao
     dao.close();

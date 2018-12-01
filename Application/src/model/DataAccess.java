@@ -196,7 +196,6 @@ public class DataAccess implements AutoCloseable {
             for (float price : priceList) {
                 sql = "INSERT INTO category (price) VALUES ( " + price + " )";
                 statement.executeUpdate(sql);
-                System.out.println(price);
             }
             System.out.println("category populated");
 
@@ -273,7 +272,6 @@ public class DataAccess implements AutoCloseable {
                 while (results.next()) {
                     list.add(results.getInt(1));
                 }
-
                 return list;
             }
         }
@@ -310,10 +308,31 @@ public class DataAccess implements AutoCloseable {
      * @throws DataAccessException if an unrecoverable error occurs
      */
     public List<Booking> bookSeats(String customer, List<Integer> counts,
-            boolean adjoining) throws DataAccessException {
+            boolean adjoining) throws DataAccessException, SQLException {
         // TODO
+try (ResultSet results = connection.prepareStatement("SELECT id FROM seat WHERE available=TRUE ORDER BY id;").executeQuery()) {
+    results.last();
+    if (counts.size()<=results.getRow()){
+       //results.beforeFirst(); 
+       results.first();
+       if(adjoining){
+           
+       }
+       else{
+              while (results.next()) {
+                    System.out.println("resu  "+results.getInt(1));
+                }
+           for(int cat : counts){
+               System.out.println("iterat  "+cat);
+               results.next();
+               System.out.println("resu  "+results.getInt(1));
+           }
+       }
+    }
 
-        return Collections.EMPTY_LIST;
+            return Collections.EMPTY_LIST;
+        }
+       // return Collections.EMPTY_LIST;
     }
 
     /**
