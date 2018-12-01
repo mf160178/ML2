@@ -88,6 +88,7 @@ public class DataAccess implements AutoCloseable {
      * @param password the password
      *
      * @throws DataAccessException if an unrecoverable error occurs
+     * @throws java.sql.SQLException
      */
     public DataAccess(String url, String login, String password) throws
             DataAccessException, SQLException {
@@ -164,6 +165,30 @@ public class DataAccess implements AutoCloseable {
             statement.executeUpdate(sql);
             sql = "create table prices ( category INT NOT NULL AUTO_INCREMENT , price FLOAT NOT NULL, PRIMARY KEY (category))";
             statement.executeUpdate(sql);
+            
+            //Comment moi je ferais:
+            /*sql =   "create table category (" + 
+                        "id INT NOT NULL AUTO_INCREMENT ," + 
+                        "price FLOAT NOT NULL," + 
+                        "PRIMARY KEY (id)" +
+                    ");";
+            statement.executeUpdate(sql);
+            sql =   "create table seat (" + 
+                        "id INT NOT NULL AUTO_INCREMENT ," + 
+                        "free BOOLEAN NOT NULL DEFAULT TRUE ," + 
+                        "PRIMARY KEY (id)" + 
+                        ");";
+            statement.executeUpdate(sql);
+            sql =   "create table booking(" +
+                        "id INT NOT NULL AUTO_INCREMENT PRIMARY KEY," +
+                        "id_seat INT NOT NULL," +
+                        "customer VARCHAR(20) NOT NULL," +
+                        "id_category INT NOT NULL," +
+                        "totalPrice FLOAT NOT NULL," +
+                        "FOREIGN KEY(id_seat) REFERENCES seats(id)," +
+                        "FOREIGN KEY(id_category) REFERENCES category(id)" +
+                    ");";
+            statement.executeUpdate(sql);*/
 
             return true;
         } catch (SQLException e) {

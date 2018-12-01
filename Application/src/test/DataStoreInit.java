@@ -1,5 +1,6 @@
 package test;
 
+import java.sql.SQLException;
 import java.util.Arrays;
 import static java.util.Arrays.asList;
 import java.util.List;
@@ -33,7 +34,7 @@ public class DataStoreInit {
    *
    * @throws DataAccessException for convenience (no try-catch needed)
    */
-  public static void main(String[] args) throws DataAccessException {
+  public static void main(String[] args) throws DataAccessException, SQLException {
 
     // check parameters
     if (args.length == 2) {

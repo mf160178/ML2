@@ -1,5 +1,6 @@
 package test;
 
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import static java.util.Arrays.asList;
@@ -43,7 +44,7 @@ public class SingleUserTest {
    *
    * @throws DataAccessException for convenience (no try-catch needed)
    */
-  public static void main(String[] args) throws DataAccessException {
+  public static void main(String[] args) throws DataAccessException, SQLException {
 
     // add parameters
     if (args.length == 2) {
