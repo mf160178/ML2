@@ -260,14 +260,20 @@ public class DataAccess implements AutoCloseable {
             DataAccessException, SQLException {
         // TODO
         //select seat from seats where available=true
-        
-        try(ResultSet results = connection.prepareStatement("SELECT id FROM seat WHERE free=TRUE;").executeQuery())
+        if(stable)
         {
-            List<Integer> list = new ArrayList<>();
-            while(results.next())
-                list.add(results.getInt(1));
+            //I did not understand how to do that
+        }    
+        else
+        {
+            try(ResultSet results = connection.prepareStatement("SELECT id FROM seat WHERE free=TRUE;").executeQuery())
+            {
+                List<Integer> list = new ArrayList<>();
+                while(results.next())
+                    list.add(results.getInt(1));
             
-            return list;
+                return list;
+            }
         }
         
         //return Collections.EMPTY_LIST;
