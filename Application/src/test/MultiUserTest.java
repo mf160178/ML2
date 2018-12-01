@@ -6,6 +6,8 @@ import java.util.Arrays;
 import static java.util.Arrays.asList;
 import java.util.List;
 import java.util.Random;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import model.Booking;
 import model.DataAccess;
 import model.DataAccessException;
@@ -78,7 +80,9 @@ public class MultiUserTest {
         multiUserTests(dao, customer);
       } catch (DataAccessException e) {
         System.err.println(this + ": " + e);
-      }
+      } catch (SQLException ex) {
+            Logger.getLogger(MultiUserTest.class.getName()).log(Level.SEVERE, null, ex);
+        }
 
       System.out.println(this + ": exiting");
     }
@@ -92,7 +96,7 @@ public class MultiUserTest {
      *
      * @throws DataAccessException if anything goes wrong
      */
-    private void multiUserTests(DataAccess dao, String customer) throws DataAccessException {
+    private void multiUserTests(DataAccess dao, String customer) throws DataAccessException, SQLException {
 
       // REMINDER: most of the tests below will fail until the DataAccess methods
       // are implemented.
@@ -155,6 +159,7 @@ public class MultiUserTest {
       System.err.println("usage: SingleUserTest <url> <login> <password>");
       System.exit(1);
     }
+    DataStoreInit.main(args);
 
     // launch the customer emulators
     List<DataAccess> daos = new ArrayList<>();

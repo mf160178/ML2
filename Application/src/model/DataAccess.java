@@ -132,73 +132,79 @@ public class DataAccess implements AutoCloseable {
      * @throws DataAccessException if an unrecoverable error occurs
      */
     public boolean initDataStore(int seatCount, List<Float> priceList)
-            throws DataAccessException {
+            throws DataAccessException, SQLException {
         String sql = null;
-        // Below is an example showing how to manage table "foo".
-        // You have to tailor the example to your needs.
+
         try {
             // drop existing tables, if any
             Statement statement = connection.createStatement();
             try {
-                statement.executeUpdate("drop table seats");
+                statement.executeUpdate("drop table seat");
             } catch (SQLException e) {
                 // likely cause: table does not exists: print error and go on
-                System.err.print("drop table seats: " + e);
+                System.err.print("drop table seat: " + e);
                 System.err.println(", going on...");
             }
             try {
-                statement.executeUpdate("drop table prices");
+                statement.executeUpdate("drop table category");
             } catch (SQLException e) {
-                System.err.print("drop table prices: " + e);
+                System.err.print("drop table category: " + e);
                 System.err.println(", going on...");
             }
             try {
-                statement.executeUpdate("drop table bookings");
+                statement.executeUpdate("drop table booking");
             } catch (SQLException e) {
-                System.err.print("drop table bookings: " + e);
+                System.err.print("drop table booking: " + e);
                 System.err.println(", going on...");
             }
 
             // ...
             // create tables
-            //clé etrangeres a gerer
-            sql = "create table seats ( id INT NOT NULL AUTO_INCREMENT , available BOOLEAN NOT NULL DEFAULT FALSE , PRIMARY KEY (id))";
+            sql = "create table seat ("
+                    + "id INT NOT NULL AUTO_INCREMENT ,"
+                    + "available BOOLEAN NOT NULL DEFAULT TRUE ,"
+                    + "PRIMARY KEY (id))";
             statement.executeUpdate(sql);
-            sql = "create table bookings ( id INT NOT NULL AUTO_INCREMENT , customer VARCHAR NOT NULL,seat INT NOT NULL, PRIMARY KEY (id))";
+            System.out.println("seat created");
+
+            sql = "create table booking("
+                    + "id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,"
+                    + "id_seat INT NOT NULL,"
+                    + "customer VARCHAR(20) NOT NULL,"
+                    + "id_category INT NOT NULL,"
+                    + "price FLOAT NOT NULL,"
+                    + "FOREIGN KEY(id_seat) REFERENCES seat(id),"
+                    + "FOREIGN KEY(id_category) REFERENCES category(id))";
             statement.executeUpdate(sql);
-            sql = "create table prices ( category INT NOT NULL AUTO_INCREMENT , price FLOAT NOT NULL, PRIMARY KEY (category))";
+            System.out.println("booking created");
+
+            sql = "create table category ("
+                    + "id INT NOT NULL AUTO_INCREMENT ,"
+                    + "price FLOAT NOT NULL,"
+                    + "PRIMARY KEY (id))";
             statement.executeUpdate(sql);
-            
-            //Comment moi je ferais:
-            /*sql =   "create table category (" + 
-                        "id INT NOT NULL AUTO_INCREMENT ," + 
-                        "price FLOAT NOT NULL," + 
-                        "PRIMARY KEY (id)" +
-                    ");";
-            statement.executeUpdate(sql);
-            sql =   "create table seat (" + 
-                        "id INT NOT NULL AUTO_INCREMENT ," + 
-                        "free BOOLEAN NOT NULL DEFAULT TRUE ," + 
-                        "PRIMARY KEY (id)" + 
-                        ");";
-            statement.executeUpdate(sql);
-            sql =   "create table booking(" +
-                        "id INT NOT NULL AUTO_INCREMENT PRIMARY KEY," +
-                        "id_seat INT NOT NULL," +
-                        "customer VARCHAR(20) NOT NULL," +
-                        "id_category INT NOT NULL," +
-                        "totalPrice FLOAT NOT NULL," +
-                        "FOREIGN KEY(id_seat) REFERENCES seats(id)," +
-                        "FOREIGN KEY(id_category) REFERENCES category(id)" +
-                    ");";
-            statement.executeUpdate(sql);*/
+            System.out.println("category created");
+            System.out.println("Database created");
+
+            //Populate database
+            for (int i = 0; i < seatCount; i++) {
+                sql = "INSERT INTO seat VALUES ()";
+                statement.executeUpdate(sql);
+            }
+            System.out.println("seat populated");
+
+            for (float price : priceList) {
+                sql = "INSERT INTO category (price) VALUES ( " + price + " )";
+                statement.executeUpdate(sql);
+                System.out.println(price);
+            }
+            System.out.println("category populated");
 
             return true;
         } catch (SQLException e) {
             System.err.println(sql + ": " + e);
             return false;
         }
-        // TODO
     }
 
     /**
@@ -215,21 +221,20 @@ public class DataAccess implements AutoCloseable {
     public List<Float> getPriceList() throws DataAccessException, SQLException {
         // TODO 
         // select price from prices
-        
+
         //PreparedStatement priceList;
         //priceList = connection.prepareStatement("SELECT price FROM category;");
-        
-        try(ResultSet results = connection.prepareStatement("SELECT price FROM category;").executeQuery())
-        {
+        try (ResultSet results = connection.prepareStatement("SELECT price FROM category;").executeQuery()) {
             List<Float> list = new ArrayList<>();
-            while(results.next())
+            while (results.next()) {
+
                 list.add(results.getFloat(1));
-            
+            }
+
             return list;
         }
-        
+
         //return Collections.EMPTY_LIST;
-        
     }
 
     /**
@@ -260,22 +265,19 @@ public class DataAccess implements AutoCloseable {
             DataAccessException, SQLException {
         // TODO
         //select seat from seats where available=true
-        if(stable)
-        {
+        if (stable) {
             //I did not understand how to do that
-        }    
-        else
-        {
-            try(ResultSet results = connection.prepareStatement("SELECT id FROM seat WHERE free=TRUE;").executeQuery())
-            {
+        } else {
+            try (ResultSet results = connection.prepareStatement("SELECT id FROM seat WHERE available=TRUE;").executeQuery()) {
                 List<Integer> list = new ArrayList<>();
-                while(results.next())
+                while (results.next()) {
                     list.add(results.getInt(1));
-            
+                }
+
                 return list;
             }
         }
-        
+
         return Collections.EMPTY_LIST;
     }
 
@@ -310,7 +312,7 @@ public class DataAccess implements AutoCloseable {
     public List<Booking> bookSeats(String customer, List<Integer> counts,
             boolean adjoining) throws DataAccessException {
         // TODO
-        
+
         return Collections.EMPTY_LIST;
     }
 

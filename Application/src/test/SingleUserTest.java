@@ -77,7 +77,7 @@ public class SingleUserTest {
    *
    * @throws DataAccessException if anything goes wrong
    */
-  private static void singleUserTests(DataAccess dao) throws DataAccessException {
+  private static void singleUserTests(DataAccess dao) throws DataAccessException, SQLException {
 
     // REMINDER: most of the tests below will fail until the DataAccess methods
     // are implemented.
