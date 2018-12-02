@@ -173,12 +173,12 @@ public class DataAccess implements AutoCloseable {
             
             sql = "create table booking("
                     + "id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,"
-                    + "seat INT NOT NULL,"
+                    + "id_seat INT NOT NULL,"
                     + "customer VARCHAR(20) NOT NULL,"
-                    + "category INT NOT NULL,"
+                    + "id_category INT NOT NULL,"
                     + "price FLOAT NOT NULL,"
-                    + "FOREIGN KEY(seat) REFERENCES seat(id),"
-                    + "FOREIGN KEY(category) REFERENCES category(id))";
+                    + "FOREIGN KEY(id_seat) REFERENCES seat(id),"
+                    + "FOREIGN KEY(id_category) REFERENCES category(id))";
             statement.executeUpdate(sql);
 
             //Populate database
