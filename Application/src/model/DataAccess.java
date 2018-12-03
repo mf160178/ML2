@@ -480,7 +480,7 @@ public class DataAccess implements AutoCloseable {
              System.out.println("\t\t sentinel "+sentinel);
            try (ResultSet results = connection.prepareStatement("SELECT * FROM booking WHERE id_seat ='" + b.getSeat() + "';").executeQuery()){
             results.next();
-            if (results.getInt(2) != b.getSeat() || results.getString(3).equals(b.getCustomer()) || results.getInt(4) != b.getCategory() || results.getFloat(5) != b.getPrice()) {
+            if (results.getInt(2) != b.getSeat() || !results.getString(3).equals(b.getCustomer()) || results.getInt(4) != b.getCategory() || results.getFloat(5) != b.getPrice()) {
                 sentinel = false;
                 break;
             }
@@ -492,6 +492,7 @@ public class DataAccess implements AutoCloseable {
             Statement statement = connection.createStatement();
             for (Booking b : bookings) {
                 statement.executeUpdate("DELETE FROM booking WHERE id = " + b.getId() + ";");
+                statement.executeUpdate("UPDATE seat SET available=TRUE WHERE id=" + b.getSeat() + ";");
             }
         }
       
