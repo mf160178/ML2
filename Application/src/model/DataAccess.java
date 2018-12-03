@@ -364,16 +364,18 @@ public class DataAccess implements AutoCloseable {
 
                 }
                 results.next();
-                for (int cat : counts) {
+                for (int i=0;i<counts.size();i++){
+                //for (int cat : counts) {
+                    System.out.println("Category chosen : " + i);
                     Statement statement = connection.createStatement();
                     bookableSeat = results.getInt(1);
-                    ResultSet price = connection.prepareStatement("SELECT price FROM category WHERE id=" + cat + ";").executeQuery();
+                    ResultSet price = connection.prepareStatement("SELECT price FROM category WHERE id=" + i + ";").executeQuery();
                     price.next();
 
                     statement.executeUpdate("INSERT INTO booking (id_seat,customer,id_category,price) "
-                            + "VALUES(" + bookableSeat + ",'" + customer + "'," + cat + "," + price.getFloat(1) + ");");
+                            + "VALUES(" + bookableSeat + ",'" + customer + "'," + i + "," + price.getFloat(1) + ");");
                     statement.executeUpdate("UPDATE seat SET available=FALSE WHERE id=" + bookableSeat + ";");
-                    listBookings.add(new Booking(bookableSeat, customer, cat, price.getFloat(1)));
+                    listBookings.add(new Booking(bookableSeat, customer, i, price.getFloat(1)));
                 }
                 return listBookings;
             }

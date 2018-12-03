@@ -135,6 +135,7 @@ public class SingleUserTest {
     // 2- Erroneous bookings by the same user
     //
     bookings1 = dao.bookSeats("Smith", asList(SEAT_COUNT + 1), false);
+    //bookings2 = dao.bookSeats("", asList(1), false);
     // etc.
     //
     //
