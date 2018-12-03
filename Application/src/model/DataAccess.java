@@ -260,18 +260,19 @@ public class DataAccess implements AutoCloseable {
         // TODO
         //select seat from seats where available=true
         if (stable) {
-            //I did not understand how to do that
-        } else {
-            try (ResultSet results = connection.prepareStatement("SELECT id FROM seat WHERE available=TRUE;").executeQuery()) {
-                List<Integer> list = new ArrayList<>();
-                while (results.next()) {
-                    list.add(results.getInt(1));
-                }
-                return list;
-            }
+            //start an sql transaction.
+            //This transaction will be ended in the bookseat method.
+            //If this method is called anywhere else than in a bookseat method, then it CANNOT have stable as true
         }
-
-        return Collections.EMPTY_LIST;
+        
+        try (ResultSet results = connection.prepareStatement("SELECT id FROM seat WHERE available=TRUE;").executeQuery()) {
+            List<Integer> list = new ArrayList<>();
+            while (results.next()) {
+                list.add(results.getInt(1));
+            }
+            return list;
+        
+        }
     }
 
     /**
