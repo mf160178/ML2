@@ -216,7 +216,8 @@ public class DataAccess implements AutoCloseable {
         // select price from prices
         System.out.println("\t\t getprices");
         //PreparedStatement priceList;
-        //priceList = connection.prepareStatement("SELECT price FROM category;");
+        //fill a result set using a prepared statement that gets all different prices from all different categories.
+        //Should I add a DISTINCT ?
         try (ResultSet results = connection.prepareStatement("SELECT price FROM category;").executeQuery()) {
             List<Float> list = new ArrayList<>();
             while (results.next()) {
@@ -265,7 +266,9 @@ public class DataAccess implements AutoCloseable {
             //If this method is called anywhere else than in a bookseat method, then it CANNOT have stable as true
         }
         
-        try (ResultSet results = connection.prepareStatement("SELECT id FROM seat WHERE available=TRUE;").executeQuery()) {
+        //Wether a transaction was started or not in order to keep the seats available, we have to select those seats.
+        //So, we create a result set that gets all the available seat ids
+        try (ResultSet results = connection.prepareStatement("SELECT id FROM seat WHERE available=TRUE ORDER BY id ASC;").executeQuery()) {
             List<Integer> list = new ArrayList<>();
             while (results.next()) {
                 list.add(results.getInt(1));
@@ -309,17 +312,24 @@ public class DataAccess implements AutoCloseable {
                 System.out.println("\t\t bookseats 1");
         List<Booking> listBookings = new ArrayList<>();
 
+        //getting all this ids of the free seats listed in the DB
+        //try (ArrayList<Integer> freeSeats = this.getAvailableSeats(false)) {
         try (ResultSet results = connection.prepareStatement("SELECT id FROM seat WHERE available=TRUE ORDER BY id;").executeQuery()) {
             results.last();
             ArrayList<Integer> freeSeats = new ArrayList();
 
+            //testing if the number of free seats is inferior to the number of available seats --> if you can book that many seats
+            //if(counts.size() <= freeSeats.size() {
             if (counts.size() <= results.getRow()) {
                 int bookableSeat;
                 results.beforeFirst();
 
+                //if all seats must be adjoining (numbers in ascending order --> use the getAvailableSeats method)
                 if (adjoining) {
+                    //since I filled up the freeSeats list using getAvSeats, you don't need the next 2 lines
                     while (results.next()) {
                         freeSeats.add(results.getInt(1));
+                        //
                         if (freeSeats.size() > 2 && results.getInt(1) != freeSeats.get(freeSeats.size() - 1)) {
                             freeSeats.clear();
                             freeSeats.add(results.getInt(1));
@@ -328,6 +338,7 @@ public class DataAccess implements AutoCloseable {
                             break;
                         }
                     }
+                    //check if there are enough adjoining seats for this booking
                     if (freeSeats.size() < 2 && counts.size() > 1) {
                         System.err.println("Not enough adjoining seats for this booking");
                         return Collections.EMPTY_LIST;
