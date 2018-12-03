@@ -329,10 +329,13 @@ public class DataAccess implements AutoCloseable {
                     //since I filled up the freeSeats list using getAvSeats, you don't need the next 2 lines
                     while (results.next()) {
                         freeSeats.add(results.getInt(1));
-                        //
+                        //check that the seat you add is adjoining the previous one.
+                        //If it is not --> You have to find another set of adjoining seats so clear the list and readd the first non adjoining seat (current one)
+                        //else you do nothing since the seat has been added
                         if (freeSeats.size() > 2 && results.getInt(1) != freeSeats.get(freeSeats.size() - 1)) {
                             freeSeats.clear();
                             freeSeats.add(results.getInt(1));
+                        //Although, if the number of seats entered matches the count of seats the customer wants to book, then break, you have all you need
                         } else if (freeSeats.size() >= counts.size()) {
                             results.beforeFirst();
                             break;
@@ -488,7 +491,7 @@ public class DataAccess implements AutoCloseable {
 
             Statement statement = connection.createStatement();
             for (Booking b : bookings) {
-                statement.executeUpdate("DELETE FROM booking WHERE id = " + b.getId() + ");");
+                statement.executeUpdate("DELETE FROM booking WHERE id = " + b.getId() + ";");
             }
         }
       
