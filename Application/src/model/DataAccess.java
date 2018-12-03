@@ -135,7 +135,7 @@ public class DataAccess implements AutoCloseable {
             throws DataAccessException, SQLException {
         String sql = null;
         System.out.println("\t\t Initialisation");
-        
+
         try {
             // drop existing tables, if any
             Statement statement = connection.createStatement();
@@ -167,10 +167,10 @@ public class DataAccess implements AutoCloseable {
             statement.executeUpdate(sql);
 
             sql = "create table category ("
-                    + "id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,"
+                    + "id INT NOT NULL PRIMARY KEY,"
                     + "price FLOAT NOT NULL)";
             statement.executeUpdate(sql);
-            
+
             sql = "create table booking("
                     + "id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,"
                     + "id_seat INT NOT NULL,"
@@ -187,8 +187,8 @@ public class DataAccess implements AutoCloseable {
                 statement.executeUpdate(sql);
             }
 
-            for (float price : priceList) {
-                sql = "INSERT INTO category (price) VALUES ( " + price + " )";
+            for (int i = 0; i < priceList.size(); i++) {
+                sql = "INSERT INTO category (id,price) VALUES ( " + i + "," + priceList.get(i) + " )";
                 statement.executeUpdate(sql);
 
             }
@@ -257,7 +257,7 @@ public class DataAccess implements AutoCloseable {
      */
     public List<Integer> getAvailableSeats(boolean stable) throws
             DataAccessException, SQLException {
-                System.out.println("\t\t getava");
+        System.out.println("\t\t getava");
         // TODO
         //select seat from seats where available=true
         if (stable) {
@@ -265,7 +265,7 @@ public class DataAccess implements AutoCloseable {
             //This transaction will be ended in the bookseat method.
             //If this method is called anywhere else than in a bookseat method, then it CANNOT have stable as true
         }
-        
+
         //Wether a transaction was started or not in order to keep the seats available, we have to select those seats.
         //So, we create a result set that gets all the available seat ids
         try (ResultSet results = connection.prepareStatement("SELECT id FROM seat WHERE available=TRUE ORDER BY id ASC;").executeQuery()) {
@@ -274,7 +274,7 @@ public class DataAccess implements AutoCloseable {
                 list.add(results.getInt(1));
             }
             return list;
-        
+
         }
     }
 
@@ -309,7 +309,7 @@ public class DataAccess implements AutoCloseable {
     public List<Booking> bookSeats(String customer, List<Integer> counts,
             boolean adjoining) throws DataAccessException, SQLException {
 
-                System.out.println("\t\t bookseats 1");
+        System.out.println("\t\t bookseats 1");
         List<Booking> listBookings = new ArrayList<>();
 
         //getting all this ids of the free seats listed in the DB
@@ -335,7 +335,7 @@ public class DataAccess implements AutoCloseable {
                         if (freeSeats.size() > 2 && results.getInt(1) != freeSeats.get(freeSeats.size() - 1)) {
                             freeSeats.clear();
                             freeSeats.add(results.getInt(1));
-                        //Although, if the number of seats entered matches the count of seats the customer wants to book, then break, you have all you need
+                            //Although, if the number of seats entered matches the count of seats the customer wants to book, then break, you have all you need
                         } else if (freeSeats.size() >= counts.size()) {
                             results.beforeFirst();
                             break;
@@ -352,7 +352,7 @@ public class DataAccess implements AutoCloseable {
                 for (int cat : counts) {
                     Statement statement = connection.createStatement();
                     bookableSeat = results.getInt(1);
-                    ResultSet price = connection.prepareStatement("SELECT price FROM category WHERE id=" + (cat + 1) + ";").executeQuery();
+                    ResultSet price = connection.prepareStatement("SELECT price FROM category WHERE id=" + cat + ";").executeQuery();
                     price.next();
 
                     statement.executeUpdate("INSERT INTO booking (id_seat,customer,id_category,price) "
@@ -388,8 +388,8 @@ public class DataAccess implements AutoCloseable {
      */
     public List<Booking> bookSeats(String customer, List<List<Integer>> seatss)
             throws DataAccessException, SQLException {
-      
-                System.out.println("\t\t bookseats");
+
+        System.out.println("\t\t bookseats");
         List<Booking> listBookings = new ArrayList<>();
 
         int nbWantedSeats = 0;
@@ -409,7 +409,7 @@ public class DataAccess implements AutoCloseable {
                 results.next();
 
                 for (int i = 0; i < seatss.size(); i++) {
-                    ResultSet price = connection.prepareStatement("SELECT price FROM category WHERE id=" + (i + 1) + ";").executeQuery();
+                    ResultSet price = connection.prepareStatement("SELECT price FROM category WHERE id=" + i + ";").executeQuery();
                     price.next();
                     for (int j = 0; j < seatss.get(i).size(); j++) {
                         Statement statement = connection.createStatement();
@@ -442,7 +442,7 @@ public class DataAccess implements AutoCloseable {
      * @throws DataAccessException if an unrecoverable error occurs
      */
     public List<Booking> getBookings(String customer) throws DataAccessException, SQLException {
-                System.out.println("\t\t getbooking");
+        System.out.println("\t\t getbooking");
         ResultSet results;
         List<Booking> bookingList = new ArrayList();
         if (customer.equals("")) {
@@ -474,17 +474,17 @@ public class DataAccess implements AutoCloseable {
      */
     public boolean cancelBookings(List<Booking> bookings) throws DataAccessException, SQLException {
         System.out.println("\t\t cancel");
-        boolean sentinel = true;  
+        boolean sentinel = true;
 
         for (Booking b : bookings) {
-             System.out.println("\t\t sentinel "+sentinel);
-           try (ResultSet results = connection.prepareStatement("SELECT * FROM booking WHERE id_seat ='" + b.getSeat() + "';").executeQuery()){
-            results.next();
-            if (results.getInt(2) != b.getSeat() || !results.getString(3).equals(b.getCustomer()) || results.getInt(4) != b.getCategory() || results.getFloat(5) != b.getPrice()) {
-                sentinel = false;
-                break;
+            System.out.println("\t\t sentinel " + sentinel);
+            try (ResultSet results = connection.prepareStatement("SELECT * FROM booking WHERE id_seat ='" + b.getSeat() + "';").executeQuery()) {
+                results.next();
+                if (results.getInt(2) != b.getSeat() || !results.getString(3).equals(b.getCustomer()) || results.getInt(4) != b.getCategory() || results.getFloat(5) != b.getPrice()) {
+                    sentinel = false;
+                    break;
+                }
             }
-           }
 
         }
         if (sentinel) {
@@ -495,7 +495,7 @@ public class DataAccess implements AutoCloseable {
                 statement.executeUpdate("UPDATE seat SET available=TRUE WHERE id=" + b.getSeat() + ";");
             }
         }
-      
+
         return sentinel;
     }
 
