@@ -227,8 +227,11 @@ public class DataAccess implements AutoCloseable {
 
             return list;
         }
+        catch(SQLException e){
+            e.printStackTrace();
+        }
 
-        //return Collections.EMPTY_LIST;
+        return Collections.EMPTY_LIST;
     }
 
     /**
@@ -276,6 +279,10 @@ public class DataAccess implements AutoCloseable {
             return list;
 
         }
+        catch(SQLException e){
+            e.printStackTrace();
+        }
+        return Collections.EMPTY_LIST;
     }
 
     /**
@@ -311,16 +318,24 @@ public class DataAccess implements AutoCloseable {
 
         System.out.println("\t\t bookseats 1");
         List<Booking> listBookings = new ArrayList<>();
-
+        
         //getting all this ids of the free seats listed in the DB
         //try (ArrayList<Integer> freeSeats = this.getAvailableSeats(false)) {
         try (ResultSet results = connection.prepareStatement("SELECT id FROM seat WHERE available=TRUE ORDER BY id;").executeQuery()) {
             results.last();
             ArrayList<Integer> freeSeats = new ArrayList();
 
+            //get the total number of wanted seats
+            int nbSeatsWanted = 0;
+            for(int i=0;i<counts.size();i++)
+                nbSeatsWanted += counts.get(i);
+            
             //testing if the number of free seats is inferior to the number of available seats --> if you can book that many seats
             //if(counts.size() <= freeSeats.size() {
-            if (counts.size() <= results.getRow()) {
+            //if (counts.size() <= results.getRow()) {
+            System.out.println("Seats to book : " + nbSeatsWanted);
+            System.out.println("seats available: " + this.getAvailableSeats(false).size());
+            if(nbSeatsWanted < this.getAvailableSeats(false).size()){
                 int bookableSeat;
                 results.beforeFirst();
 
@@ -367,6 +382,7 @@ public class DataAccess implements AutoCloseable {
             return Collections.EMPTY_LIST;
         }
         // return Collections.EMPTY_LIST;
+
     }
 
     /**
@@ -398,7 +414,9 @@ public class DataAccess implements AutoCloseable {
                 nbWantedSeats++;
             }
         }
-
+        System.out.println("Seats to book : " + nbWantedSeats);
+        System.out.println("seats available: " + this.getAvailableSeats(false).size());
+        
         try (ResultSet results = connection.prepareStatement("SELECT id FROM seat WHERE available=TRUE ORDER BY id;").executeQuery()) {
             results.last();
             ArrayList<Integer> freeSeats = new ArrayList();
