@@ -10,6 +10,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Provides a generic booking application with high-level methods to access its
@@ -263,10 +265,19 @@ public class DataAccess implements AutoCloseable {
         System.out.println("\t\t getava");
         // TODO
         //select seat from seats where available=true
+        try {
+            connection.setAutoCommit(false);
+        } catch (SQLException ex) {
+            Logger.getLogger(DataAccess.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        
+        
         if (stable) {
-            //start an sql transaction.
-            //This transaction will be ended in the bookseat method.
-            //If this method is called anywhere else than in a bookseat method, then it CANNOT have stable as true
+            try {
+                connection.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
+            } catch (SQLException ex) {
+                Logger.getLogger(DataAccess.class.getName()).log(Level.SEVERE, null, ex);
+            }
         }
 
         //Wether a transaction was started or not in order to keep the seats available, we have to select those seats.
@@ -342,10 +353,14 @@ public class DataAccess implements AutoCloseable {
                     {
                         seatsToBook.add(bookableIds.get(i));
                         System.out.println("Added seat NB: " + bookableIds.get(i));
-                        if(seatsToBook.size()>2 && !Objects.equals(seatsToBook.get(seatsToBook.size()-1), seatsToBook.get(seatsToBook.size())))
+                        if(seatsToBook.size()>=2)
                         {
-                            seatsToBook.clear();
-                            seatsToBook.add(bookableIds.get(i));
+                            System.out.println(seatsToBook.get(0));
+                            System.out.println(seatsToBook.get(1));
+                            if(seatsToBook.get(seatsToBook.size()-2)!=seatsToBook.get(seatsToBook.size()-1)-1){
+                                seatsToBook.clear();
+                                seatsToBook.add(bookableIds.get(i));
+                            }
                         }
                         System.out.println("wanted: " + nbSeatsWanted + ", current: " + seatsToBook.size());
                         if(seatsToBook.size()==nbSeatsWanted){ System.out.println("IBREAK"); break;}
@@ -354,6 +369,8 @@ public class DataAccess implements AutoCloseable {
                     if(seatsToBook.size()!=nbSeatsWanted)
                     {
                         System.out.println("Not enough adjoining seats for this booking sorry!");
+                        connection.rollback();
+                        connection.setAutoCommit(true);
                         return Collections.EMPTY_LIST;
                     }
                     
@@ -394,6 +411,8 @@ public class DataAccess implements AutoCloseable {
 
                 }
                 
+                connection.commit();
+                connection.setAutoCommit(true);
                 return listBookings;
                 
             }
@@ -404,6 +423,13 @@ public class DataAccess implements AutoCloseable {
             
         }
         catch(SQLException e) {
+            try {
+                connection.rollback();
+                connection.setAutoCommit(true);
+            } catch (SQLException ex) {
+                Logger.getLogger(DataAccess.class.getName()).log(Level.SEVERE, null, ex);
+            }
+            
             e.printStackTrace();
         }
         
@@ -471,14 +497,25 @@ public class DataAccess implements AutoCloseable {
                     }
                 }
 
+                connection.commit();
+                connection.setAutoCommit(true);
                 return listBookings;
             }
             System.err.println("Not enough seats for this booking");
 
+            connection.rollback();
+            connection.setAutoCommit(true);
             return Collections.EMPTY_LIST;
         }
         catch(SQLException e)
         {
+            try {
+                connection.rollback();
+                connection.setAutoCommit(true);
+            } catch (SQLException ex) {
+                Logger.getLogger(DataAccess.class.getName()).log(Level.SEVERE, null, ex);
+            }
+            
             e.printStackTrace();
         }
         

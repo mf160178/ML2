@@ -158,7 +158,7 @@ public class SingleUserTest {
     System.out.println("available seats=" + available);
     checkGetAvailableSeats(available, SEAT_COUNT);
     
-/*
+
     //
     // 2- Erroneous bookings by the same user
     //
@@ -182,18 +182,18 @@ public class SingleUserTest {
     available = dao.getAvailableSeats(false);
     System.out.println("available seats=" + available);
     checkGetAvailableSeats(available, SEAT_COUNT - 3);
-
+/*
     // book seats that are not available
     int booked = bookings1.get(0).getSeat();
     bookings2 = dao.bookSeats("Smith", asList(asList(booked)));
     System.out.println("bookings2=" + bookings2);
     test.add("bookSeats (not available)", bookings2.isEmpty());
-
+*/
     // book seats that are not adjoining
     bookings2 = dao.bookSeats("Smith", asList(2), true);
     System.out.println("bookings2=" + bookings2);
     test.add("bookSeats (not adjoining)", bookings2.isEmpty());
-*/
+
     //
     // etc.
     //
