@@ -132,7 +132,7 @@ public class DataAccess implements AutoCloseable {
      * @throws DataAccessException if an unrecoverable error occurs
      */
     public boolean initDataStore(int seatCount, List<Float> priceList)
-            throws DataAccessException, SQLException {
+            throws DataAccessException {
         String sql = null;
         System.out.println("\t\t Initialisation");
 
@@ -209,9 +209,8 @@ public class DataAccess implements AutoCloseable {
      * @return the price list
      *
      * @throws DataAccessException if an unrecoverable error occurs
-     * @throws java.sql.SQLException
      */
-    public List<Float> getPriceList() throws DataAccessException, SQLException {
+    public List<Float> getPriceList() throws DataAccessException {
         // TODO 
         // select price from prices
         System.out.println("\t\t getprices");
@@ -259,7 +258,7 @@ public class DataAccess implements AutoCloseable {
      * @throws java.sql.SQLException
      */
     public List<Integer> getAvailableSeats(boolean stable) throws
-            DataAccessException, SQLException {
+            DataAccessException {
         System.out.println("\t\t getava");
         // TODO
         //select seat from seats where available=true
@@ -314,76 +313,82 @@ public class DataAccess implements AutoCloseable {
      * @throws DataAccessException if an unrecoverable error occurs
      */
     public List<Booking> bookSeats(String customer, List<Integer> counts,
-            boolean adjoining) throws DataAccessException, SQLException {
+            boolean adjoining) throws DataAccessException {
 
         System.out.println("\t\t bookseats 1");
         List<Booking> listBookings = new ArrayList<>();
         
-        //getting all this ids of the free seats listed in the DB
-        //try (ArrayList<Integer> freeSeats = this.getAvailableSeats(false)) {
-        try (ResultSet results = connection.prepareStatement("SELECT id FROM seat WHERE available=TRUE ORDER BY id;").executeQuery()) {
-            results.last();
-            ArrayList<Integer> freeSeats = new ArrayList();
-
-            //get the total number of wanted seats
-            int nbSeatsWanted = 0;
-            for(int i=0;i<counts.size();i++)
+        //Find total number of seats wanted by the customer
+        int nbSeatsWanted = 0;
+        for(int i=0;i<counts.size();i++)
                 nbSeatsWanted += counts.get(i);
-            
-            //testing if the number of free seats is inferior to the number of available seats --> if you can book that many seats
-            //if(counts.size() <= freeSeats.size() {
-            //if (counts.size() <= results.getRow()) {
-            System.out.println("Seats to book : " + nbSeatsWanted);
-            System.out.println("seats available: " + this.getAvailableSeats(false).size());
-            if(nbSeatsWanted < this.getAvailableSeats(false).size()){
-                int bookableSeat;
-                results.beforeFirst();
-
-                //if all seats must be adjoining (numbers in ascending order --> use the getAvailableSeats method)
-                if (adjoining) {
-                    //since I filled up the freeSeats list using getAvSeats, you don't need the next 2 lines
-                    while (results.next()) {
-                        freeSeats.add(results.getInt(1));
-                        //check that the seat you add is adjoining the previous one.
-                        //If it is not --> You have to find another set of adjoining seats so clear the list and readd the first non adjoining seat (current one)
-                        //else you do nothing since the seat has been added
-                        if (freeSeats.size() > 2 && results.getInt(1) != freeSeats.get(freeSeats.size() - 1)) {
-                            freeSeats.clear();
-                            freeSeats.add(results.getInt(1));
-                            //Although, if the number of seats entered matches the count of seats the customer wants to book, then break, you have all you need
-                        } else if (freeSeats.size() >= counts.size()) {
-                            results.beforeFirst();
-                            break;
-                        }
-                    }
-                    //check if there are enough adjoining seats for this booking
-                    if (freeSeats.size() < 2 && counts.size() > 1) {
-                        System.err.println("Not enough adjoining seats for this booking");
-                        return Collections.EMPTY_LIST;
-                    }
-
+        
+        //Find total number of seats available and their IDs
+        int nbSeatsAvailable = this.getAvailableSeats(false).size();
+        List<Integer> bookableIds = this.getAvailableSeats(false);
+        
+        //The chosen seats to be booked:
+        List<Integer> seatsToBook = new ArrayList<>();
+        
+        try {
+            //check number of seats available
+            if(nbSeatsWanted <= nbSeatsAvailable)
+            {
+                //If all seats must be adjoining
+                if(adjoining)
+                {
+                    
                 }
-                results.next();
-                for (int i=0;i<counts.size();i++){
-                //for (int cat : counts) {
-                    System.out.println("Category chosen : " + i);
+                //If not
+                else
+                {
+                    //add the correct number of available seats no matter the order
+                    for(int i=0;i<nbSeatsWanted;i++)
+                        seatsToBook.add(bookableIds.get(i));
+                }
+                
+                //add all the chosen seats to the database
+                int category;
+                float price;
+                //get all possible prices per category
+                //ResultSet prices = connection.prepareStatement("SELECT price FROM category").executeQuery();
+                for(int i=0;i<nbSeatsWanted;i++)
+                {
                     Statement statement = connection.createStatement();
-                    bookableSeat = results.getInt(1);
-                    ResultSet price = connection.prepareStatement("SELECT price FROM category WHERE id=" + i + ";").executeQuery();
-                    price.next();
-
+                    if (i<counts.get(0)) { category=0; price = 100;}
+                    else if(i<counts.get(0)+counts.get(1)){ category=1; price = 50;}
+                    else{ category=2; price = 75;}
+                    
+                    
                     statement.executeUpdate("INSERT INTO booking (id_seat,customer,id_category,price) "
-                            + "VALUES(" + bookableSeat + ",'" + customer + "'," + i + "," + price.getFloat(1) + ");");
-                    statement.executeUpdate("UPDATE seat SET available=FALSE WHERE id=" + bookableSeat + ";");
-                    listBookings.add(new Booking(bookableSeat, customer, i, price.getFloat(1)));
-                }
-                return listBookings;
-            }
-            System.err.println("Not enough seats for this booking");
+                            + "VALUES(" 
+                            + seatsToBook.get(i) + ",'" 
+                            + customer + "'," 
+                            + category + "," 
+                            + price 
+                            + ");"
+                    );
+                    
+                    statement.executeUpdate("UPDATE seat SET available=FALSE WHERE id=" + seatsToBook.get(i) + ";");
+                    
+                    listBookings.add(new Booking(seatsToBook.get(i), customer, category, price));
 
-            return Collections.EMPTY_LIST;
+                }
+                
+                return listBookings;
+                
+            }
+            else
+            {
+                System.err.println("Not enough seats for this booking");
+            }
+            
         }
-        // return Collections.EMPTY_LIST;
+        catch(SQLException e) {
+            e.printStackTrace();
+        }
+        
+        return Collections.EMPTY_LIST;
 
     }
 
@@ -405,7 +410,7 @@ public class DataAccess implements AutoCloseable {
      * @throws DataAccessException if an unrecoverable error occurs
      */
     public List<Booking> bookSeats(String customer, List<List<Integer>> seatss)
-            throws DataAccessException, SQLException {
+            throws DataAccessException {
 
         System.out.println("\t\t bookseats");
         List<Booking> listBookings = new ArrayList<>();
@@ -419,7 +424,8 @@ public class DataAccess implements AutoCloseable {
         System.out.println("Seats to book : " + nbWantedSeats);
         System.out.println("seats available: " + this.getAvailableSeats(false).size());
         
-        try (ResultSet results = connection.prepareStatement("SELECT id FROM seat WHERE available=TRUE ORDER BY id;").executeQuery()) {
+        try {
+            ResultSet results = connection.prepareStatement("SELECT id FROM seat WHERE available=TRUE ORDER BY id;").executeQuery();
             results.last();
             ArrayList<Integer> freeSeats = new ArrayList();
 
@@ -447,6 +453,12 @@ public class DataAccess implements AutoCloseable {
 
             return Collections.EMPTY_LIST;
         }
+        catch(SQLException e)
+        {
+            e.printStackTrace();
+        }
+        
+        return Collections.EMPTY_LIST;
     }
 
     /**
@@ -461,19 +473,26 @@ public class DataAccess implements AutoCloseable {
      *
      * @throws DataAccessException if an unrecoverable error occurs
      */
-    public List<Booking> getBookings(String customer) throws DataAccessException, SQLException {
+    public List<Booking> getBookings(String customer) throws DataAccessException {
         System.out.println("\t\t getbooking");
         ResultSet results;
         List<Booking> bookingList = new ArrayList();
-        if (customer.equals("")) {
-            results = connection.prepareStatement("SELECT * FROM booking;").executeQuery();
-        } else {
-            results = connection.prepareStatement("SELECT * FROM booking WHERE customer ='" + customer + "';").executeQuery();
+        try{
+            if (customer.equals("")) {
+                results = connection.prepareStatement("SELECT * FROM booking;").executeQuery();
+            } else {
+                results = connection.prepareStatement("SELECT * FROM booking WHERE customer ='" + customer + "';").executeQuery();
+            }
+            while (results.next()) {
+                bookingList.add(new Booking(results.getInt(1), results.getInt(2), results.getString(3), results.getInt(4), results.getFloat(5)));
+            }
+            return bookingList;
         }
-        while (results.next()) {
-            bookingList.add(new Booking(results.getInt(1), results.getInt(2), results.getString(3), results.getInt(4), results.getFloat(5)));
+        catch(SQLException e){
+            e.printStackTrace();
         }
-        return bookingList;
+        
+        return Collections.EMPTY_LIST;
     }
 
     /**
@@ -492,10 +511,11 @@ public class DataAccess implements AutoCloseable {
      *
      * @throws DataAccessException if an unrecoverable error occurs
      */
-    public boolean cancelBookings(List<Booking> bookings) throws DataAccessException, SQLException {
+    public boolean cancelBookings(List<Booking> bookings) throws DataAccessException {
         System.out.println("\t\t cancel");
         boolean sentinel = true;
 
+        try{
         for (Booking b : bookings) {
             System.out.println("\t\t sentinel " + sentinel);
             try (ResultSet results = connection.prepareStatement("SELECT * FROM booking WHERE id_seat ='" + b.getSeat() + "';").executeQuery()) {
@@ -517,6 +537,12 @@ public class DataAccess implements AutoCloseable {
         }
 
         return sentinel;
+        }
+        catch(SQLException e)
+        {
+            e.printStackTrace();
+        }
+        return false;
     }
 
     /**
@@ -533,6 +559,7 @@ public class DataAccess implements AutoCloseable {
         try {
             connection.close();
         } catch (SQLException e) {
+            e.printStackTrace();
         }
 
     }

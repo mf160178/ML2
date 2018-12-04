@@ -43,7 +43,6 @@ public class SingleUserTest {
    * @param args the command line arguments: URL, login, password
    *
    * @throws DataAccessException for convenience (no try-catch needed)
-   * @throws java.sql.SQLException
    */
   public static void main(String[] args) throws DataAccessException, SQLException {
 
@@ -100,24 +99,26 @@ public class SingleUserTest {
     System.out.println("available seats=" + available);
     checkGetAvailableSeats(available, SEAT_COUNT);
 
-    // book one random seat in category #0
-    List<Booking> bookings1 = dao.bookSeats("Smith", asList(1), false);
+    // book random seats: 2 in category #0, 1 in category #1, 1 in category #2
+    List<Booking> bookings1 = dao.bookSeats("Smith", asList(2, 1, 1), false);
     System.out.println("bookings1=" + bookings1);
-    checkBookSeats(bookings1, "Smith", asList(1), false);
+    checkBookSeats(bookings1, "Smith", asList(2, 1, 1), false);
 
     available = dao.getAvailableSeats(false);
     System.out.println("available seats=" + available);
-    checkGetAvailableSeats(available, SEAT_COUNT - 1);
+    checkGetAvailableSeats(available, SEAT_COUNT - (2 + 1 + 1));
+
 
     // book another (designated) seat in category #0
-    int other = bookings1.get(0).getSeat() % SEAT_COUNT + 1;
+    int other = available.get(0);
     List<Booking> bookings2 = dao.bookSeats("Smith", asList(asList(other)));
-    System.out.println("bookings2=" + bookings1);
+    System.out.println("bookings2=" + bookings2);
     checkBookSeats(bookings2, "Smith", asList(asList(other)));
 
     available = dao.getAvailableSeats(false);
     System.out.println("available seats=" + available);
-    checkGetAvailableSeats(available, SEAT_COUNT - 2);
+    checkGetAvailableSeats(available, SEAT_COUNT - (2 + 1 + 1) - 1);
+
 
     // cancel all the current bookings
     List<Booking> allBookings = new ArrayList<>();
@@ -131,11 +132,44 @@ public class SingleUserTest {
     System.out.println("available seats=" + available);
     checkGetAvailableSeats(available, SEAT_COUNT);
 
+    
+/*
     //
     // 2- Erroneous bookings by the same user
     //
+    // book more seats than available (1)
     bookings1 = dao.bookSeats("Smith", asList(SEAT_COUNT + 1), false);
-    //bookings2 = dao.bookSeats("", asList(1), false);
+    System.out.println("bookings1=" + bookings1);
+    test.add("bookSeats (more than available 1)", bookings1.isEmpty());
+
+    available = dao.getAvailableSeats(false);
+    System.out.println("available seats=" + available);
+    checkGetAvailableSeats(available, SEAT_COUNT);
+
+    // book more seats than available (2)
+    bookings1 = dao.bookSeats("Smith", asList(asList(1, 3, 5)));
+    System.out.println("bookings1=" + bookings1);
+
+    bookings2 = dao.bookSeats("Smith", asList(3), false);
+    System.out.println("bookings2=" + bookings2);
+    test.add("bookSeats (more than available 2)", bookings2.isEmpty());
+
+    available = dao.getAvailableSeats(false);
+    System.out.println("available seats=" + available);
+    checkGetAvailableSeats(available, SEAT_COUNT - 3);
+
+    // book seats that are not available
+    int booked = bookings1.get(0).getSeat();
+    bookings2 = dao.bookSeats("Smith", asList(asList(booked)));
+    System.out.println("bookings2=" + bookings2);
+    test.add("bookSeats (not available)", bookings2.isEmpty());
+
+    // book seats that are not adjoining
+    bookings2 = dao.bookSeats("Smith", asList(2), true);
+    System.out.println("bookings2=" + bookings2);
+    test.add("bookSeats (not adjoining)", bookings2.isEmpty());
+*/
+    //
     // etc.
     //
     //
