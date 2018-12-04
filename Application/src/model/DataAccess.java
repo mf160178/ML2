@@ -9,6 +9,7 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Provides a generic booking application with high-level methods to access its
@@ -334,9 +335,28 @@ public class DataAccess implements AutoCloseable {
             //check number of seats available
             if(nbSeatsWanted <= nbSeatsAvailable)
             {
+                System.out.println("Number of seats is OK");
                 //If all seats must be adjoining
                 if(adjoining)
                 {
+                    for(int i=0;i<nbSeatsAvailable;i++)
+                    {
+                        seatsToBook.add(bookableIds.get(i));
+                        System.out.println("Added seat NB: " + bookableIds.get(i));
+                        if(seatsToBook.size()>2 && !Objects.equals(seatsToBook.get(seatsToBook.size()-1), seatsToBook.get(seatsToBook.size())))
+                        {
+                            seatsToBook.clear();
+                            seatsToBook.add(bookableIds.get(i));
+                        }
+                        System.out.println("wanted: " + nbSeatsWanted + ", current: " + seatsToBook.size());
+                        if(seatsToBook.size()==nbSeatsWanted){ System.out.println("IBREAK"); break;}
+                                                    
+                    }
+                    if(seatsToBook.size()!=nbSeatsWanted)
+                    {
+                        System.out.println("Not enough adjoining seats for this booking sorry!");
+                        return Collections.EMPTY_LIST;
+                    }
                     
                 }
                 //If not
@@ -531,7 +551,8 @@ public class DataAccess implements AutoCloseable {
 
             Statement statement = connection.createStatement();
             for (Booking b : bookings) {
-                statement.executeUpdate("DELETE FROM booking WHERE id = " + b.getId() + ";");
+                statement.executeUpdate("DELETE FROM booking WHERE id_seat = " + b.getSeat() + ";");
+                System.out.println(b.getSeat());
                 statement.executeUpdate("UPDATE seat SET available=TRUE WHERE id=" + b.getSeat() + ";");
             }
         }

@@ -131,6 +131,26 @@ public class SingleUserTest {
     available = dao.getAvailableSeats(false);
     System.out.println("available seats=" + available);
     checkGetAvailableSeats(available, SEAT_COUNT);
+    
+    // Adjoining test
+    bookings1 = dao.bookSeats("Smith", asList(2), true);
+    System.out.println("bookings1=" + bookings1);
+    checkBookSeats(bookings1, "Smith", asList(2), true);
+
+    available = dao.getAvailableSeats(false);
+    System.out.println("available seats=" + available);
+    checkGetAvailableSeats(available, SEAT_COUNT - (2));
+    
+    // cancel all the current bookings
+    allBookings = new ArrayList<>();
+    allBookings.addAll(bookings1);
+    canceled = dao.cancelBookings(allBookings);
+    System.out.println("canceled=" + canceled);
+    test.add("cancelBooking", canceled);
+
+    available = dao.getAvailableSeats(false);
+    System.out.println("available seats=" + available);
+    checkGetAvailableSeats(available, SEAT_COUNT);
 
     
 /*
