@@ -174,7 +174,7 @@ public class DataAccess implements AutoCloseable {
 
             sql = "create table booking("
                     + "id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,"
-                    + "id_seat INT NOT NULL,"
+                    + "id_seat INT UNIQUE NOT NULL,"
                     + "customer VARCHAR(20) NOT NULL,"
                     + "id_category INT NOT NULL,"
                     + "price FLOAT NOT NULL,"
@@ -277,7 +277,6 @@ public class DataAccess implements AutoCloseable {
                 list.add(results.getInt(1));
             }
             return list;
-
         }
         catch(SQLException e){
             e.printStackTrace();
@@ -369,15 +368,15 @@ public class DataAccess implements AutoCloseable {
                 
                 //add all the chosen seats to the database
                 int category;
-                float price;
+                List<Float> prices= getPriceList();
                 //get all possible prices per category
                 //ResultSet prices = connection.prepareStatement("SELECT price FROM category").executeQuery();
                 for(int i=0;i<nbSeatsWanted;i++)
                 {
                     Statement statement = connection.createStatement();
-                    if (i<counts.get(0)) { category=0; price = 100;}
-                    else if(i<counts.get(0)+counts.get(1)){ category=1; price = 50;}
-                    else{ category=2; price = 75;}
+                    if (i<counts.get(0)) { category=0;}
+                    else if(i<counts.get(0)+counts.get(1)){ category=1;}
+                    else{ category=2;}
                     
                     
                     statement.executeUpdate("INSERT INTO booking (id_seat,customer,id_category,price) "
@@ -385,13 +384,13 @@ public class DataAccess implements AutoCloseable {
                             + seatsToBook.get(i) + ",'" 
                             + customer + "'," 
                             + category + "," 
-                            + price 
+                            + prices.get(category) 
                             + ");"
                     );
                     
                     statement.executeUpdate("UPDATE seat SET available=FALSE WHERE id=" + seatsToBook.get(i) + ";");
                     
-                    listBookings.add(new Booking(seatsToBook.get(i), customer, category, price));
+                    listBookings.add(new Booking(seatsToBook.get(i), customer, category, prices.get(category) ));
 
                 }
                 
