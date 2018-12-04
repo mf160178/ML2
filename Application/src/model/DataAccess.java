@@ -433,25 +433,30 @@ public class DataAccess implements AutoCloseable {
 
         System.out.println("\t\t bookseats");
         List<Booking> listBookings = new ArrayList<>();
-
-        int nbWantedSeats = 0;
+        
+        List<Integer>seatsWanted= new ArrayList();
         for (List<Integer> category : seatss) {
-            for (int nbSeats : category) {
-                nbWantedSeats++;
+            for (int seat : category) {
+                seatsWanted.add(seat);
             }
         }
-        System.out.println("Seats to book : " + nbWantedSeats);
+        
+        System.out.println("Seats wanted : " + seatsWanted.toString());
         System.out.println("seats available: " + this.getAvailableSeats(false).size());
         
         try {
-            ResultSet results = connection.prepareStatement("SELECT id FROM seat WHERE available=TRUE ORDER BY id;").executeQuery();
-            results.last();
-            ArrayList<Integer> freeSeats = new ArrayList();
+            ResultSet results = connection.prepareStatement("SELECT id FROM seat WHERE available=FALSE ORDER BY id;").executeQuery();
+            boolean sentinel=true;
+            
+            while(results.next()){
+                if(seatsWanted.contains(results.getInt(1))){
+                    sentinel=false;
+                    System.err.println("The seats asked are not available");
+                }
+            }
 
-            if (nbWantedSeats <= results.getRow()) {
-                int bookableSeat;
-                results.beforeFirst();
-                results.next();
+            //check if there is enough seats
+            if (sentinel) {
 
                 for (int i = 0; i < seatss.size(); i++) {
                     ResultSet price = connection.prepareStatement("SELECT price FROM category WHERE id=" + i + ";").executeQuery();
