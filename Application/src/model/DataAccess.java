@@ -3,6 +3,7 @@ package model;
 //import com.mysql.jdbc.PreparedStatement;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -80,7 +81,9 @@ import java.util.logging.Logger;
  */
 public class DataAccess implements AutoCloseable {
 
-    private Connection connection;
+    private final Connection connection;
+    private PreparedStatement getPriceList = null;
+    private PreparedStatement getAvailableSeats = null;
 
     /**
      * Creates a new {@code DataAccess} object that interacts with the specified
@@ -99,6 +102,8 @@ public class DataAccess implements AutoCloseable {
             DataAccessException, SQLException {
         connection = DriverManager.getConnection(url, login, password);
         connection.setAutoCommit(false);
+        getPriceList = connection.prepareStatement("SELECT price FROM category;");
+        getAvailableSeats = connection.prepareStatement("SELECT id FROM seat WHERE available=TRUE ORDER BY id ASC;");
     }
 
     /**
@@ -215,8 +220,9 @@ public class DataAccess implements AutoCloseable {
 
         //PreparedStatement priceList;
         //fill a result set using a prepared statement that gets all different prices from all different categories.
-        //Should I add a DISTINCT ?
-        try (ResultSet results = connection.prepareStatement("SELECT price FROM category;").executeQuery()) {
+        try (ResultSet results = getPriceList.executeQuery()) {
+            
+            //Fill a list with the query's results
             List<Float> list = new ArrayList<>();
             while (results.next()) {
 
@@ -229,7 +235,6 @@ public class DataAccess implements AutoCloseable {
           throw new DataAccessException(e.getMessage()); 
         }
 
-        //return Collections.EMPTY_LIST;
     }
 
     /**
@@ -258,13 +263,16 @@ public class DataAccess implements AutoCloseable {
     public List<Integer> getAvailableSeats(boolean stable) throws
             DataAccessException {
 
+        //Change the autocommit state to false.
+        //It will be set back to true when a transaction is commited in a bookSeat() method.
         try {
             connection.setAutoCommit(false);
         } catch (SQLException ex) {
             Logger.getLogger(DataAccess.class.getName()).log(Level.SEVERE, null, ex);
         }
         
-        
+        //In the case of stable being true, we want to avoid anyone booking selected seats while someone is working on them.
+        //In order to reach that goal we set the isolation level of the transaction to serializable
         if (stable) {
             try {
                 connection.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
@@ -275,7 +283,7 @@ public class DataAccess implements AutoCloseable {
 
         //Wether a transaction was started or not in order to keep the seats available, we have to select those seats.
         //So, we create a result set that gets all the available seat ids
-        try (ResultSet results = connection.prepareStatement("SELECT id FROM seat WHERE available=TRUE ORDER BY id ASC;").executeQuery()) {
+        try (ResultSet results = getAvailableSeats.executeQuery()) {
             List<Integer> list = new ArrayList<>();
             while (results.next()) {
                 list.add(results.getInt(1));
@@ -318,6 +326,7 @@ public class DataAccess implements AutoCloseable {
     public List<Booking> bookSeats(String customer, List<Integer> counts,
             boolean adjoining) throws DataAccessException {
 
+        //create a list in which we will later store all the bookings (Objects) we made.
         List<Booking> listBookings = new ArrayList<>();
         
         //Find total number of seats wanted by the customer
@@ -336,32 +345,36 @@ public class DataAccess implements AutoCloseable {
             //check number of seats available
             if(nbSeatsWanted <= nbSeatsAvailable)
             {
-                System.out.println("Number of seats is OK");
                 //If all seats must be adjoining
                 if(adjoining)
                 {
+                    //browse all the available seats
                     for(int i=0;i<nbSeatsAvailable;i++)
                     {
+                        //at each loop add the current seat to the list.
                         seatsToBook.add(bookableIds.get(i));
-                        System.out.println("Added seat NB: " + bookableIds.get(i));
+                        //Check the size of the array so that we don't create an outOfBounds exception by mistake
                         if(seatsToBook.size()>=2)
                         {
-                            System.out.println(seatsToBook.get(0));
-                            System.out.println(seatsToBook.get(1));
+                            //Then we can check that the seat we just added and the previous one are actually adjoined
+                            //If they are not we clear the list and re add the current seat that might be adjoined with the following ones
                             if(seatsToBook.get(seatsToBook.size()-2)!=seatsToBook.get(seatsToBook.size()-1)-1){
                                 seatsToBook.clear();
                                 seatsToBook.add(bookableIds.get(i));
                             }
                         }
-                        System.out.println("wanted: " + nbSeatsWanted + ", current: " + seatsToBook.size());
-                        if(seatsToBook.size()==nbSeatsWanted){ System.out.println("IBREAK"); break;}
+                        //We also check at each loop that we didn't reach the number of wanted seats, and if that is the case we have what we need and can break out of the loop.
+                        if(seatsToBook.size()==nbSeatsWanted) break;
                                                     
                     }
+                    //Then finally, we could have gotten out and still do not have enough adjoining seats so we also make that verification
                     if(seatsToBook.size()!=nbSeatsWanted)
                     {
+                        //If there are not enough, we signal it and then rollback the transaction since this is an all or nothing function
                         System.out.println("Not enough adjoining seats for this booking sorry!");
                         connection.rollback();
                         connection.setAutoCommit(true);
+                        //finally we return an empty list since we could not get any good result
                         return Collections.EMPTY_LIST;
                     }
                     
@@ -377,8 +390,7 @@ public class DataAccess implements AutoCloseable {
                 //add all the chosen seats to the database
                 int category;
                 List<Float> prices= getPriceList();
-                //get all possible prices per category
-                //ResultSet prices = connection.prepareStatement("SELECT price FROM category").executeQuery();
+                //browse the nuber of wanted seats
                 for(int i=0;i<nbSeatsWanted;i++)
                 {
                     Statement statement = connection.createStatement();
@@ -386,7 +398,7 @@ public class DataAccess implements AutoCloseable {
                     else if(i<counts.get(0)+counts.get(1)){ category=1;}
                     else{ category=2;}
                     
-                    
+                    //add into the booking table every wanted booking
                     statement.executeUpdate("INSERT INTO booking (id_seat,customer,id_category,price) "
                             + "VALUES(" 
                             + seatsToBook.get(i) + ",'" 
@@ -396,12 +408,15 @@ public class DataAccess implements AutoCloseable {
                             + ");"
                     );
                     
+                    //update the availability of the seat in the seat table
                     statement.executeUpdate("UPDATE seat SET available=FALSE WHERE id=" + seatsToBook.get(i) + ";");
                     
+                    //create a new booking object and add it to the list we created for them
                     listBookings.add(new Booking(seatsToBook.get(i), customer, category, prices.get(category) ));
 
                 }
                 
+                //Finally commit all changes and switch the autocommit back to true
                 connection.commit();
                 connection.setAutoCommit(true);
                 return listBookings;
@@ -415,6 +430,7 @@ public class DataAccess implements AutoCloseable {
         }
         catch(SQLException e) {
             try {
+                //if an error occured we rollback again.
                 connection.rollback();
                 connection.setAutoCommit(true);
             } catch (SQLException ex) {
