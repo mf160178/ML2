@@ -342,10 +342,14 @@ public class DataAccess implements AutoCloseable {
                     {
                         seatsToBook.add(bookableIds.get(i));
                         System.out.println("Added seat NB: " + bookableIds.get(i));
-                        if(seatsToBook.size()>2 && !Objects.equals(seatsToBook.get(seatsToBook.size()-1), seatsToBook.get(seatsToBook.size())))
+                        if(seatsToBook.size()>=2)
                         {
-                            seatsToBook.clear();
-                            seatsToBook.add(bookableIds.get(i));
+                            System.out.println(seatsToBook.get(0));
+                            System.out.println(seatsToBook.get(1));
+                            if(seatsToBook.get(seatsToBook.size()-2)!=seatsToBook.get(seatsToBook.size()-1)-1){
+                                seatsToBook.clear();
+                                seatsToBook.add(bookableIds.get(i));
+                            }
                         }
                         System.out.println("wanted: " + nbSeatsWanted + ", current: " + seatsToBook.size());
                         if(seatsToBook.size()==nbSeatsWanted){ System.out.println("IBREAK"); break;}
