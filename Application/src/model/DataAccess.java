@@ -9,7 +9,6 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -137,7 +136,6 @@ public class DataAccess implements AutoCloseable {
     public boolean initDataStore(int seatCount, List<Float> priceList)
             throws DataAccessException {
         String sql = null;
-        System.out.println("\t\t Initialisation");
 
         try {
             // drop existing tables, if any
@@ -214,9 +212,7 @@ public class DataAccess implements AutoCloseable {
      * @throws DataAccessException if an unrecoverable error occurs
      */
     public List<Float> getPriceList() throws DataAccessException {
-        // TODO 
-        // select price from prices
-        System.out.println("\t\t getprices");
+
         //PreparedStatement priceList;
         //fill a result set using a prepared statement that gets all different prices from all different categories.
         //Should I add a DISTINCT ?
@@ -230,10 +226,10 @@ public class DataAccess implements AutoCloseable {
             return list;
         }
         catch(SQLException e){
-            e.printStackTrace();
+          throw new DataAccessException(e.getMessage()); 
         }
 
-        return Collections.EMPTY_LIST;
+        //return Collections.EMPTY_LIST;
     }
 
     /**
@@ -258,13 +254,10 @@ public class DataAccess implements AutoCloseable {
      * seat is available
      *
      * @throws DataAccessException if an unrecoverable error occurs
-     * @throws java.sql.SQLException
      */
     public List<Integer> getAvailableSeats(boolean stable) throws
             DataAccessException {
-        System.out.println("\t\t getava");
-        // TODO
-        //select seat from seats where available=true
+
         try {
             connection.setAutoCommit(false);
         } catch (SQLException ex) {
@@ -290,9 +283,8 @@ public class DataAccess implements AutoCloseable {
             return list;
         }
         catch(SQLException e){
-            e.printStackTrace();
+                throw new DataAccessException(e.getMessage()); 
         }
-        return Collections.EMPTY_LIST;
     }
 
     /**
@@ -326,7 +318,6 @@ public class DataAccess implements AutoCloseable {
     public List<Booking> bookSeats(String customer, List<Integer> counts,
             boolean adjoining) throws DataAccessException {
 
-        System.out.println("\t\t bookseats 1");
         List<Booking> listBookings = new ArrayList<>();
         
         //Find total number of seats wanted by the customer
@@ -430,7 +421,7 @@ public class DataAccess implements AutoCloseable {
                 Logger.getLogger(DataAccess.class.getName()).log(Level.SEVERE, null, ex);
             }
             
-            e.printStackTrace();
+            throw new DataAccessException(e.getMessage()); 
         }
         
         return Collections.EMPTY_LIST;
@@ -457,15 +448,14 @@ public class DataAccess implements AutoCloseable {
     public List<Booking> bookSeats(String customer, List<List<Integer>> seatss)
             throws DataAccessException {
 
-        System.out.println("\t\t bookseats");
         List<Booking> listBookings = new ArrayList<>();
         
         List<Integer>seatsWanted= new ArrayList();
-        for (List<Integer> category : seatss) {
-            for (int seat : category) {
+        seatss.forEach((category) -> {
+            category.forEach((seat) -> {
                 seatsWanted.add(seat);
-            }
-        }
+            });
+        });
         
         System.out.println("Seats wanted : " + seatsWanted.toString());
         System.out.println("seats available: " + this.getAvailableSeats(false).size());
@@ -516,10 +506,10 @@ public class DataAccess implements AutoCloseable {
                 Logger.getLogger(DataAccess.class.getName()).log(Level.SEVERE, null, ex);
             }
             
-            e.printStackTrace();
+       throw new DataAccessException(e.getMessage()); 
         }
         
-        return Collections.EMPTY_LIST;
+      //  return Collections.EMPTY_LIST;
     }
 
     /**
@@ -535,7 +525,6 @@ public class DataAccess implements AutoCloseable {
      * @throws DataAccessException if an unrecoverable error occurs
      */
     public List<Booking> getBookings(String customer) throws DataAccessException {
-        System.out.println("\t\t getbooking");
         ResultSet results;
         List<Booking> bookingList = new ArrayList();
         try{
@@ -550,10 +539,10 @@ public class DataAccess implements AutoCloseable {
             return bookingList;
         }
         catch(SQLException e){
-            e.printStackTrace();
+           throw new DataAccessException(e.getMessage()); 
         }
         
-        return Collections.EMPTY_LIST;
+      //  return Collections.EMPTY_LIST;
     }
 
     /**
@@ -578,7 +567,6 @@ public class DataAccess implements AutoCloseable {
 
         try{
         for (Booking b : bookings) {
-            System.out.println("\t\t sentinel " + sentinel);
             try (ResultSet results = connection.prepareStatement("SELECT * FROM booking WHERE id_seat ='" + b.getSeat() + "';").executeQuery()) {
                 results.next();
                 if (results.getInt(2) != b.getSeat() || !results.getString(3).equals(b.getCustomer()) || results.getInt(4) != b.getCategory() || results.getFloat(5) != b.getPrice()) {
@@ -602,9 +590,9 @@ public class DataAccess implements AutoCloseable {
         }
         catch(SQLException e)
         {
-            e.printStackTrace();
+               throw new DataAccessException(e.getMessage()); 
         }
-        return false;
+       // return false;
     }
 
     /**
@@ -617,11 +605,10 @@ public class DataAccess implements AutoCloseable {
     @Override
     public void close() throws DataAccessException {
 
-        System.out.println("\t\t close");
         try {
             connection.close();
         } catch (SQLException e) {
-            e.printStackTrace();
+                throw new DataAccessException(e.getMessage()); 
         }
 
     }
